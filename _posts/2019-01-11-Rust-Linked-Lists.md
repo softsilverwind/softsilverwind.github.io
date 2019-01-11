@@ -1,7 +1,7 @@
 ---
 layout: post
-title:  "Designing a Safe Doubly Linked List with C++-like Iterators in Rust"
-date:   2019-01-04 10:54:59 +0200
+title:  "Designing a Safe Doubly Linked List with C++-like Iterators in Rust (Parts 1 and 2)"
+date:   2019-01-11 13:00:00 +0200
 categories: Rust
 ---
 
@@ -76,7 +76,7 @@ There it is.
 1. Almost doubly linked list.
 1. With C++-like iterators.
 
-The main reason I have not published a crate with this idea is that, in order to be widely available, the index traits (after extreme bikeshedding) have to land on std. The list can definitely exist as its own crate, but the indices have to become the de facto standard when implementing a new datatype. Otherwise it will be dependency hell using these traits to write generic code that works with all third party collections (see [Orphan Rule][Rustbook Traits]).
+The main reason I have not published a crate with this idea is that, in order to be widely available, the index traits (after extreme bikeshedding) have to land on std, or on a widely accepted crate. The list can definitely exist as its own crate, but the indices have to become the de facto standard when implementing a new datatype. Otherwise it will be dependency hell using these traits to write generic code that works with all third party collections (see [Orphan Rule][Rustbook Traits]).
 
 I do not consider the source code of my implementation as part of this blog post, but since I once stripped down an old snapshot of it, I find no harm in [making it public][source code]. It is not commented and many parts such as the `Index` traits have been changed countless times, so I will not make any remarks on it.
 
@@ -94,7 +94,7 @@ Let’s implement a datatype that has the following features:
 1. O(1) insertion when we have an index there.
 1. O(1) splitting and merging when we have the appropriate indices
 1. Is a `BidirectionalIndex`
-1. And has the most coveted property, safety. We might need a master of the Coq to prove it, but this is a brainstorming post, so allow me to approach it intuitively.
+1. And has the most coveted property, safety. We might need a master of the [Coq][Coq] to prove it, but this is a brainstorming post, so allow me to approach it intuitively.
 
 Let’s stop being fuzzy. The following will be mostly Rust (it should compile with minor changes) but needs polishing before it can turn into a library:
 
@@ -208,7 +208,7 @@ impl<T> ImmutableIndex<ListIndex<T>> for List<T>
             return ListIndex {
                 list_id: self.list_id,
                 e_tag: Uuid::new_v4(),
-                index: std::ptr::null::() as *mut ListNode
+                index: std::ptr::null::() as *mut ListNode<T>
             }
         }
 
@@ -267,11 +267,13 @@ impl<T> ForwardIndex<ListIndex<T>> for List<T>
 }
 ```
 
-The most interesting method is the split/merge. Unfortunately, we have to be conservative here. When we merge a list into another, we have to invalidate *all* indices of the second list. If you can find a more clever invalidation scheme, I will be glad to hear it.
+The most interesting method is split/merge. Unfortunately, we have to be conservative here. When we merge a list into another, we have to invalidate *all* indices of the second list. If you can find a more clever invalidation scheme, I will be glad to hear it.
 
 How do we invalidate all indices you may ask? Easier done than said. We change the list_id of the second list into a new random uuid!
 
 Implementation is left to the reader :)
+
+The final issue is the garbage collection of the reclaims vector. Unfortunately, the only answer I can think of is a `shrink_to_fit` implementation which invalidates all indices (using the new uuid trick). An alternative method could take a list of mutable indices as an argument and update the list_id of indices that can be kept valid. I don't think it is possible to reference count the indices, since it is not guaranteed that an index will always live longer than the collection, hence the Drop implementation has to (and cannot) check if the counter exists or not.
 
 So, if I have not done a grave error somewhere, the only source of unsafety is uuid clash. It might happen, right? Well, there is a huge safeguard. Unless the uuid generator is predictable, there is a big difference between a code that works 99.9999% of the time and has a security issue 0.0001% of the time and a code that has a security issue 0.0001% of the time and *panics* 99.9999% of the time. And uuids have many more 9s. After all, if someone does not notice trillions of panics, maybe he deserves to be hacked... :)
 
@@ -292,6 +294,7 @@ That's all folks :)
 1. [Slides of my presentation][slides]
 1. [Learning Rust With Entirely Too Many Linked Lists][Linked List Book]
 1. [Rust Book on Traits (Orphan Rule)][Rustbook Traits]
+1. [Coq proof assistant][Coq]
 
 [sinatra]: http://sinatrarb.com
 [std::LinkedList]: https://doc.rust-lang.org/std/collections/struct.LinkedList.html
@@ -305,3 +308,4 @@ That's all folks :)
 [RIIR]: https://github.com/ansuz/RIIR
 [Linked List Book]: https://cglab.ca/~abeinges/blah/too-many-lists/book/
 [Rustbook Traits]: https://doc.rust-lang.org/book/ch10-02-traits.html
+[Coq]: https://coq.inria.fr/
