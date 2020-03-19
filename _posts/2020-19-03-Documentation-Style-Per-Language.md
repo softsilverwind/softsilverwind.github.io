@@ -215,21 +215,6 @@ Or not. This is a page with examples. No class definition, no method definitions
 At this point, let's just pray to the Python gods and blindly trust the example...
 
 ```python
-from fastapi import FastAPI, Request, HTTPException
-
-app = FastAPI()
-
-
-@app.get("/")
-def read_root():
-    return {"Hello": "World"}
-
-
-@app.get("/items/{item_id}")
-def read_item(item_id: int, q: str = None):
-    return {"item_id": item_id, "q": q}
-
-
 @app.middleware("http")
 async def check_auth(request: Request, call_next):
     if request.headers["X-TOKEN"] == '9ee519f0-33b1-46bb-a53c-24670b161725':
@@ -243,21 +228,6 @@ Ok, After further googling, the 403 page is easy: `raise HTTPException(status_co
 Or not. I again forgot this is Python and not Ruby, and indexing out of bounds throws an exception instead of returning nil. Multilingual guys' problems!
 
 ```python
-from fastapi import FastAPI, Request
-
-app = FastAPI()
-
-
-@app.get("/")
-def read_root():
-    return {"Hello": "World"}
-
-
-@app.get("/items/{item_id}")
-def read_item(item_id: int, q: str = None):
-    return {"item_id": item_id, "q": q}
-
-
 @app.middleware("http")
 async def check_auth(request: Request, call_next):
     if request.headers.get("X-TOKEN", '') == '9ee519f0-33b1-46bb-a53c-24670b161725':
