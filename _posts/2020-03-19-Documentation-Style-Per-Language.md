@@ -2,7 +2,7 @@
 layout: post
 title:  "Programming Language Documentation Shootout"
 date:   2020-03-19 13:00:00 +0200
-categories: Multilanguage Shootout
+categories: PL_Shootout
 ---
 
 Introduction
